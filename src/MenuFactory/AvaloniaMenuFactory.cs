@@ -10,22 +10,26 @@ using Icon = Projektanker.Icons.Avalonia.Icon;
 
 namespace MenuFactory;
 
-public class AvaloniaMenuFactory(Func<string, string>? getTranslationResource) : IMenuFactory
+public class AvaloniaMenuFactory(InputElement? visualRoot, Func<string, string>? getTranslationResource) : IMenuFactory
 {
     private const string MENU_ITEM_STYLE = "MenuFactory-MenuItem";
     private const string TOP_LEVEL_MENU_ITEM_STYLE = "MenuFactory-TopLevel";
 
     private static readonly Func<string, string> _defaultGetTranslationResource = static (str) => str;
 
+    private readonly InputElement? _visualRoot = visualRoot;
+    private readonly Func<string, string> _getTranslationResource = getTranslationResource ?? _defaultGetTranslationResource;
     private readonly Dictionary<string, List<MenuItem>> _groups = [];
     private readonly Dictionary<string, MenuItem> _cache = [];
     private readonly ObservableCollection<Control> _items = [];
-    private readonly Func<string, string> _getTranslationResource = getTranslationResource
-        ?? _defaultGetTranslationResource;
 
     public IEnumerable Items => _items;
 
-    public AvaloniaMenuFactory() : this(null)
+    public AvaloniaMenuFactory() : this(null, null)
+    {
+    }
+
+    public AvaloniaMenuFactory(InputElement visualRoot) : this(visualRoot, null)
     {
     }
 
@@ -60,6 +64,10 @@ public class AvaloniaMenuFactory(Func<string, string>? getTranslationResource) :
             ItemsControl item = items[i];
 
         RemoveFromParent:
+            if (item is MenuItem menuItem && _visualRoot?.KeyBindings.FirstOrDefault(x => x.Command == menuItem.Command) is KeyBinding keyBinding) {
+                _visualRoot.KeyBindings.Remove(keyBinding);
+            }
+
             if (_items.Remove(item)) {
                 continue;
             }
@@ -122,6 +130,13 @@ public class AvaloniaMenuFactory(Func<string, string>? getTranslationResource) :
             },
             ItemsSource = new ObservableCollection<object>()
         };
+
+        if (inputGesture is not null && _visualRoot is not null) {
+            _visualRoot.KeyBindings.Add(new KeyBinding {
+                Gesture = inputGesture,
+                Command = command,
+            });
+        }
 
         MenuItem? parent = BuildMenuItemPath(attribute.Path);
         IList targetItemCollection = parent switch {

@@ -1,0 +1,79 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  nuget: "https://api.nuget.org/v3/index.json"
+  authors: ArchLeaders
+  description: |-
+    Simple Avalonia library to help manage the application menu
+  readme: ./Readme.md
+  icon: ./Icon.png
+  repo: https://github.com/ArchLeaders/MenuFactory
+  spdx: MIT
+  tags: menu;avalonia;avaloniaui;factory
+
+jobs:
+  deploy:
+    name: Deploy ${{ matrix.config.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - name: MenuFactory
+          - name: MenuFactory.Abstractions
+
+    env:
+      csproj: src/${{ matrix.config.name }}/${{ matrix.config.name }}.csproj
+      bin: src/${{ matrix.config.name }}/bin
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4.1.7
+
+      - name: "Install .NET"
+        uses: actions/setup-dotnet@v4.0.1
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: "Restore packages"
+        run: dotnet restore ${{ env.csproj }}
+
+      - name: "Build project"
+        shell: bash
+        run: |
+          dotnet build ${{ env.csproj }} \
+          -c Release \
+          --no-restore
+
+      - name: "Get Version"
+        id: version
+        uses: battila7/get-version-action@v2
+
+      - name: "Pack project"
+        shell: bash
+        run: |
+          dotnet pack ${{ env.csproj }}                                      \
+          --no-restore                                                       \
+          -c Release                                                         \
+          -o ${{ env.bin }}                                                  \
+          -p:Authors="${{ env.authors }}"                                    \
+          -p:Description="${{ env.description }}"                            \
+          -p:PackageLicenseExpression="${{ env.spdx }}"                      \
+          -p:PackageProjectUrl="${{ env.repo }}"                             \
+          -p:PackageReadmeFile="${{ env.readme }}"                           \
+          -p:PackageIcon="${{ env.icon }}"                                   \
+          -p:PackageTags='"${{ env.tags }}"'                                 \
+          -p:PackageVersion="${{ steps.version.outputs.version-without-v }}" \
+          -p:RepositoryUrl="${{ env.repo }}"                                 \
+
+      - name: "Push package"
+        shell: bash
+        run: |
+          dotnet nuget push ${{ env.bin }}/*.nupkg \
+          -k ${{ secrets.NUGET_AUTH }} \
+          -s ${{ env.nuget }}

@@ -14,7 +14,7 @@ internal class DefaultMenu
         Debugger.Break();
     }
 
-    [Menu("Exit", "File", Icon = "fa-arrow-right-from-bracket", InputGesture = "Ctrl + F4", IsSeparator = true)]
+    [Menu("Exit", "File", Icon = "fa-arrow-right-from-bracket", InputGesture = "Ctrl + W", IsSeparator = true)]
     public static void Exit()
     {
         Environment.Exit(0);

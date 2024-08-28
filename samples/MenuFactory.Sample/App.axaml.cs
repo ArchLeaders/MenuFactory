@@ -21,9 +21,8 @@ public partial class App : Application
         BindingPlugins.DataValidators.RemoveAt(0);
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
-            desktop.MainWindow = new ShellView {
-                DataContext = new ShellViewModel(),
-            };
+            desktop.MainWindow = new ShellView();
+            desktop.MainWindow.DataContext = new ShellViewModel(desktop.MainWindow);
         }
 
         base.OnFrameworkInitializationCompleted();

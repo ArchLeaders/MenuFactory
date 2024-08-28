@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
 using MenuFactory.Abstractions;
 using MenuFactory.Sample.Models;
 using System.Diagnostics;
@@ -7,13 +8,14 @@ namespace MenuFactory.Sample.ViewModels;
 
 public partial class ShellViewModel : ObservableObject
 {
-    public ShellViewModel()
+    public ShellViewModel(InputElement visualRoot)
     {
-        MenuFactory.AddMenuGroup<DefaultMenu>();
+        _menuFactory = new AvaloniaMenuFactory(visualRoot);
+        _menuFactory.AddMenuGroup<DefaultMenu>();
     }
 
     [ObservableProperty]
-    private IMenuFactory _menuFactory = new AvaloniaMenuFactory();
+    private IMenuFactory _menuFactory;
 
     [ObservableProperty]
     private bool _showExtraMenuItems = false;

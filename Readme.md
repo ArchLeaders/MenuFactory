@@ -22,6 +22,8 @@ To conditionally remove menu groups, use the `IMenuFactory.RemoveMenuGroup<T>` m
 menuFactory.RemoveMenuGroup(nameof(DefaultMenu));
 ```
 
+See the [samples](./samples) for more usage details.
+
 ## Install
 
 [![NuGet](https://img.shields.io/nuget/v/MenuFactory.svg?label=NuGet&logo=NuGet&labelColor=2A2C33&color=004880&style=for-the-badge)](https://www.nuget.org/packages/MenuFactory) [![NuGet](https://img.shields.io/nuget/dt/MenuFactory.svg?label=NuGet&logo=NuGet&labelColor=2A2C33&color=37c75e&style=for-the-badge)](https://www.nuget.org/packages/MenuFactory)

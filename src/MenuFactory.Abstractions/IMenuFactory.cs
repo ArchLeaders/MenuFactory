@@ -14,8 +14,8 @@ public interface IMenuFactory
     /// <param name="source">An instance of <typeparamref name="T"/> for non-static methods.</param>
     void AddMenuGroup<T>(string? groupId = null, object? source = null);
 
-    /// <inheritdoc cref="RemoveMenuGroup(string)"/>
-    bool RemoveMenuGroup<T>(string? groupId = null) => RemoveMenuGroup(groupId ?? typeof(T).Name);
+    /// <inheritdoc cref="AddMenuGroup{T}(string?, object?)"/>
+    void AddMenuGroup<T>(T source) => AddMenuGroup<T>(typeof(T).Name, source);
 
     /// <summary>
     /// Remove an existing menu group.
@@ -23,4 +23,7 @@ public interface IMenuFactory
     /// <param name="groupId">The ID of the group to remove.</param>
     /// <returns><see langword="true"/> is the group was found, <see langword="false"/> is the <paramref name="groupId"/> could not be found.</returns>
     bool RemoveMenuGroup(string groupId);
+
+    /// <inheritdoc cref="RemoveMenuGroup(string)"/>
+    bool RemoveMenuGroup<T>(string? groupId = null) => RemoveMenuGroup(groupId ?? typeof(T).Name);
 }

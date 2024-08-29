@@ -5,13 +5,16 @@ using MenuFactory.Abstractions;
 using MenuFactory.Abstractions.Attributes;
 using System.Collections;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Reflection;
+using System.Windows.Input;
 using Icon = Projektanker.Icons.Avalonia.Icon;
 
 namespace MenuFactory;
 
 public class AvaloniaMenuFactory(InputElement? visualRoot, Func<string, string>? getTranslationResource) : IMenuFactory
 {
+    private const BindingFlags ALL_BINDING_FLAGS = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
     private const string MENU_ITEM_STYLE = "MenuFactory-MenuItem";
     private const string TOP_LEVEL_MENU_ITEM_STYLE = "MenuFactory-TopLevel";
 
@@ -39,7 +42,7 @@ public class AvaloniaMenuFactory(InputElement? visualRoot, Func<string, string>?
         groupId ??= type.Name;
 
         IEnumerable<(MethodInfo, MenuAttribute)> attributes = type
-            .GetMethods(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .GetMethods(ALL_BINDING_FLAGS)
             .Select(x => (MethodInfo: x, Attribute: x.GetCustomAttribute<MenuAttribute>()!))
             .Where(x => x.MethodInfo is not null && x.Attribute is not null);
 
@@ -49,7 +52,7 @@ public class AvaloniaMenuFactory(InputElement? visualRoot, Func<string, string>?
 
         foreach (var (info, attribute) in attributes) {
             groupItems.Add(
-                BuildMenuItemFromAttribute(info, attribute, source)
+                BuildMenuItemFromAttribute(type, info, attribute, source)
             );
         }
     }
@@ -86,9 +89,10 @@ public class AvaloniaMenuFactory(InputElement? visualRoot, Func<string, string>?
         return _groups.Remove(groupId);
     }
 
-    private MenuItem BuildMenuItemFromAttribute(MethodInfo info, MenuAttribute attribute, object? source)
+    private MenuItem BuildMenuItemFromAttribute(Type type, MethodInfo info, MenuAttribute attribute, object? source)
     {
-        if (info.GetParameters().Length > 0) {
+        int parameterCount = info.GetParameters().Length;
+        if (info.GetParameters().Length > 2) {
             throw new Exception(
                 $"The target menu method '{info.Name}' has too many parameters."
             );
@@ -100,8 +104,8 @@ public class AvaloniaMenuFactory(InputElement? visualRoot, Func<string, string>?
             );
         }
 
-        AsyncRelayCommand command = new(async () => {
-            object? result = info.Invoke(source, null);
+        AsyncRelayCommand<object> command = new(async (x) => {
+            object? result = info.Invoke(source, parameterCount == 1 ? [x] : null);
 
             if (result is Task task) {
                 await task;
@@ -120,16 +124,33 @@ public class AvaloniaMenuFactory(InputElement? visualRoot, Func<string, string>?
         MenuItem result = new() {
             Name = attribute.Name,
             Header = _getTranslationResource(attribute.Name),
-            Command = command,
-            InputGesture = inputGesture,
             Classes = {
                 MENU_ITEM_STYLE
             },
             Icon = new Icon {
                 Value = attribute.Icon ?? string.Empty
-            },
-            ItemsSource = new ObservableCollection<object>()
+            }
         };
+
+        if (attribute.GetCollectionMethodName is not null && type.GetMethod(attribute.GetCollectionMethodName, ALL_BINDING_FLAGS)?.Invoke(source, null) is IEnumerable enumerable) {
+            ObservableCollection<MenuItem> menuItems = [];
+            result.ItemsSource = menuItems;
+            BuildMenuItems(enumerable, menuItems, command);
+
+            if (enumerable is INotifyCollectionChanged collection) {
+                collection.CollectionChanged += (s, e) => {
+                    if (e.NewItems is not null) {
+                        BuildMenuItems(e.NewItems, menuItems, command);
+                    }
+                };
+            }
+
+            goto RegisterItem;
+        }
+
+        result.InputGesture = inputGesture;
+        result.Command = command;
+        result.CommandParameter = result;
 
         if (inputGesture is not null && _visualRoot is not null) {
             _visualRoot.KeyBindings.Add(new KeyBinding {
@@ -138,6 +159,7 @@ public class AvaloniaMenuFactory(InputElement? visualRoot, Func<string, string>?
             });
         }
 
+    RegisterItem:
         MenuItem? parent = BuildMenuItemPath(attribute.Path);
         IList targetItemCollection = parent switch {
             not null => (IList)parent.ItemsSource!,
@@ -199,6 +221,28 @@ public class AvaloniaMenuFactory(InputElement? visualRoot, Func<string, string>?
         }
 
         return deepestMenuItem;
+    }
+
+    private static void BuildMenuItems(IEnumerable source, ObservableCollection<MenuItem> menuItems, ICommand command)
+    {
+        foreach (object item in source) {
+            if (item is MenuItem menuItem) {
+                menuItem.Command = command;
+                menuItem.CommandParameter = menuItem;
+                menuItem.Classes.Add(MENU_ITEM_STYLE);
+                menuItems.Add(menuItem);
+                continue;
+            }
+
+            menuItems.Add(new MenuItem {
+                Header = item.ToString(),
+                Command = command,
+                CommandParameter = item,
+                Classes = {
+                    MENU_ITEM_STYLE
+                },
+            });
+        }
     }
 
     private class PathPart

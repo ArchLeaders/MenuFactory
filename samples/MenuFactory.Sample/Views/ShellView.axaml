@@ -18,7 +18,8 @@
         <StackPanel Grid.Row="1"
                     Margin="15"
                     Spacing="5">
-            <CheckBox Content="Show Extra Menu Items" IsChecked="{Binding ShowExtraMenuItems, UpdateSourceTrigger=PropertyChanged}" />
+            <CheckBox Content="Show Extra Menu Items" IsChecked="{Binding ShowExtraMenuItems}" />
+            <Button Command="{Binding AddMenuItemCommand}" Content="Add Menu Item" />
         </StackPanel>
     </Grid>
 </Window>

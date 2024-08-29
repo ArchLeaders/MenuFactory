@@ -1,10 +1,14 @@
-﻿using MenuFactory.Abstractions.Attributes;
+﻿using Avalonia.Controls;
+using MenuFactory.Abstractions.Attributes;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 
 namespace MenuFactory.Sample.Models;
 
 internal class DefaultMenu
 {
+    public ObservableCollection<string> DynamicMenuItems { get; } = [];
+
     [Menu("Open File", "File", Icon = "fa-file", InputGesture = "Ctrl + O")]
     public static async Task OpenFile()
     {
@@ -60,5 +64,17 @@ internal class DefaultMenu
     public static void Example4b1()
     {
         Debugger.Break();
+    }
+
+    [Menu("Dynamic Items", "Dynamic$:Icon=fa-list-check", Icon = "fa-crown", InputGesture = "Ctrl + F6", GetCollectionMethodName = nameof(GetDynamicItemsCollection))]
+    public static void DynamicItems(string item)
+    {
+        Debug.WriteLine(item);
+        Debugger.Break();
+    }
+
+    private ObservableCollection<string> GetDynamicItemsCollection()
+    {
+        return DynamicMenuItems;
     }
 }

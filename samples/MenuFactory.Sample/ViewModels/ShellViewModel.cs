@@ -1,5 +1,6 @@
 ﻿using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MenuFactory.Abstractions;
 using MenuFactory.Sample.Models;
 using System.Diagnostics;
@@ -8,10 +9,12 @@ namespace MenuFactory.Sample.ViewModels;
 
 public partial class ShellViewModel : ObservableObject
 {
+    private readonly DefaultMenu _defaultMenu = new();
+
     public ShellViewModel(InputElement visualRoot)
     {
         _menuFactory = new AvaloniaMenuFactory(visualRoot);
-        _menuFactory.AddMenuGroup<DefaultMenu>();
+        _menuFactory.AddMenuGroup(_defaultMenu);
     }
 
     [ObservableProperty]
@@ -19,6 +22,12 @@ public partial class ShellViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _showExtraMenuItems = false;
+
+    [RelayCommand]
+    private void AddMenuItem()
+    {
+        _defaultMenu.DynamicMenuItems.Add($"Item {_defaultMenu.DynamicMenuItems.Count + 1}");
+    }
 
     partial void OnShowExtraMenuItemsChanged(bool oldValue, bool newValue)
     {

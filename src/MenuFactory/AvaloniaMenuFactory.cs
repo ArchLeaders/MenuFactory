@@ -156,6 +156,7 @@ public class AvaloniaMenuFactory(InputElement? visualRoot, Func<string, string>?
             _visualRoot.KeyBindings.Add(new KeyBinding {
                 Gesture = inputGesture,
                 Command = command,
+                CommandParameter = result
             });
         }
 
